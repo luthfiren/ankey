@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'register.dart';
+import 'auth_service.dart'; // <-- Import your AuthService
 
 void main() {
   runApp(const MainApp());
@@ -17,19 +18,54 @@ class MainApp extends StatelessWidget {
   }
 }
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final AuthService _authService = AuthService();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  void _login() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await _authService.login(
+        _usernameController.text,
+        _passwordController.text,
+      );
+      if (result['success'] == true || result['token'] != null) {
+        // Login success, navigate or show success
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful!')),
+        );
+        // TODO: Navigate to your main/home page
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? 'Login failed')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+    setState(() => _isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      body: SafeArea( // <-- Add SafeArea here
+      body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Image placeholder goes all the way to the top (under status bar)
               SizedBox(
                 height: screenHeight / 3,
                 width: double.infinity,
@@ -40,10 +76,8 @@ class LoginPage extends StatelessWidget {
                   ),
                 ),
               ),
-              // Form container with rounded corners and grey background
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 35.0, vertical: 32.0),
-                // Removed the Container with BoxDecoration here
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -65,8 +99,9 @@ class LoginPage extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
-                    const TextField(
-                      decoration: InputDecoration(
+                    TextField(
+                      controller: _usernameController,
+                      decoration: const InputDecoration(
                         hintText: 'Username',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(15)),
@@ -77,16 +112,17 @@ class LoginPage extends StatelessWidget {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(15)),
-                          borderSide: BorderSide(color: Colors.green, width: 2), // Changed to green
+                          borderSide: BorderSide(color: Colors.green, width: 2),
                         ),
                         filled: true,
-                        fillColor: Colors.transparent, // <-- Transparent background
+                        fillColor: Colors.transparent,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const TextField(
+                    TextField(
+                      controller: _passwordController,
                       obscureText: true,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: 'Password',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(15)),
@@ -97,13 +133,12 @@ class LoginPage extends StatelessWidget {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(15)),
-                          borderSide: BorderSide(color: Colors.green, width: 2), // Changed to green
+                          borderSide: BorderSide(color: Colors.green, width: 2),
                         ),
                         filled: true,
                         fillColor: Colors.transparent,
                       ),
                     ),
-                    // "Forgot Password?" aligned to bottom right
                     Align(
                       alignment: Alignment.centerRight,
                       child: Padding(
@@ -111,7 +146,7 @@ class LoginPage extends StatelessWidget {
                         child: Text(
                           'Forgot Password?',
                           style: TextStyle(
-                            color: Colors.green, // Changed to green
+                            color: Colors.green,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -122,17 +157,18 @@ class LoginPage extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green, // Make button green
+                          backgroundColor: Colors.green,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          foregroundColor: Colors.black, // Button text color
+                          foregroundColor: Colors.black,
                         ),
-                        onPressed: () {},
-                        child: const Text('Login'),
+                        onPressed: _isLoading ? null : _login,
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Login'),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Divider with "Or" in the middle
                     Row(
                       children: [
                         const Expanded(
@@ -158,7 +194,6 @@ class LoginPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    // Google login button
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
@@ -179,14 +214,13 @@ class LoginPage extends StatelessWidget {
                               height: 24,
                               width: 24,
                             ),
-                            const SizedBox(width: 16), // Space between icon and text
+                            const SizedBox(width: 16),
                             const Text('Login with Google'),
                           ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Register text
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -211,7 +245,7 @@ class LoginPage extends StatelessWidget {
                             "Register",
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.green, // Changed to green
+                              color: Colors.green,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
