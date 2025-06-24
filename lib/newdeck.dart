@@ -10,9 +10,10 @@ class NewDeckPage extends StatefulWidget {
 
 class _NewDeckPageState extends State<NewDeckPage> {
   String deckTitle = "New Deck";
-  List<Map<String, String>> flashcards = [
+  List<Map<String, dynamic>> flashcards = [
     {'question': '', 'answer': ''}
-  ];
+  ]; // <-- pastikan dynamic, bukan String
+
   int timerMinutes = 1;
 
   void _addFlashcard() {
@@ -22,28 +23,28 @@ class _NewDeckPageState extends State<NewDeckPage> {
   }
 
   Future<void> _openCameraInput(int index) async {
-  final result = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => CameraFlashcardPage(
-        fromNewDeck: true,
-        flashcardNumber: index + 1,
-        flashcardTitle: "New Flashcard ${index + 1}",
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CameraFlashcardPage(
+          fromNewDeck: true,
+          flashcardNumber: index + 1,
+          flashcardTitle: "New Flashcard ${index + 1}",
+        ),
       ),
-    ),
-  );
-  if (result != null && result is Map) {
-    setState(() {
-      flashcards[index]['question'] = result['question'] ?? '';
-      flashcards[index]['answer'] = result['answer'] ?? '';
-      flashcards[index]['imagePath'] = result['imagePath'] ?? '';
-    });
+    );
+    if (result != null && result is Map) {
+      setState(() {
+        flashcards[index]['question'] = result['question'] ?? '';
+        flashcards[index]['answer'] = result['answer'] ?? '';
+        flashcards[index]['imagePath'] = result['imagePath'] ?? '';
+      });
+    }
   }
-}
 
   Widget _buildFlashcardInput(int index) {
-    final questionController = TextEditingController(text: flashcards[index]['question']);
-    final answerController = TextEditingController(text: flashcards[index]['answer']);
+    final questionController = TextEditingController(text: flashcards[index]['question']?.toString() ?? '');
+    final answerController = TextEditingController(text: flashcards[index]['answer']?.toString() ?? '');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -165,7 +166,7 @@ class _NewDeckPageState extends State<NewDeckPage> {
                   onPressed: () {
                     Navigator.pop(context, {
                       'title': deckTitle,
-                      'flashcards': flashcards,
+                      'flashcards': flashcards, // sudah benar, dynamic
                       'timer': timerMinutes,
                     });
                   },

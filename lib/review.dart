@@ -7,7 +7,7 @@ import 'play.dart';
 class ReviewPage extends StatelessWidget {
   final String title;
   final int duration;
-  final List<Map<String, String>> flashcards;
+  final List<Map<String, dynamic>> flashcards; // <--- Ubah di sini
 
   const ReviewPage({
     super.key,

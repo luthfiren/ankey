@@ -15,25 +15,31 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> decks = [
     {
       'title': 'History',
-      'flashcards': [
+      'flashcards': <Map<String, dynamic>>[
         {'question': 'Kapan proklamasi?', 'answer': '1945'},
         {'question': 'Siapa presiden pertama?', 'answer': 'Soekarno'},
       ]
     },
     {
       'title': 'Biology',
-      'flashcards': [
+      'flashcards': <Map<String, dynamic>>[
         {'question': 'Sel terkecil?', 'answer': 'Prokariotik'},
         {'question': 'Fotosintesis terjadi di?', 'answer': 'Kloroplas'},
       ]
     },
   ];
 
-  final List<Map<String, String>> looseFlashcards = [
-    {'title': 'New Flashcard 1', 'time': '19.00'},
-    {'title': 'New Flashcard 2', 'time': '18.00'},
-    {'title': 'New Flashcard 3', 'time': '19.00'},
-  ];
+  List<Map<String, dynamic>> looseFlashcards = [];
+
+  @override
+  void initState() {
+    super.initState();
+    looseFlashcards.addAll([
+      {'title': 'New Flashcard 1', 'time': '19.00'},
+      {'title': 'New Flashcard 2', 'time': '18.00'},
+      {'title': 'New Flashcard 3', 'time': '19.00'},
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +59,6 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              // Search bar
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
@@ -79,7 +84,6 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
-                        // MANUAL INPUT ACTION
                         final result = await Navigator.push<Map<String, dynamic>>(
                           context,
                           MaterialPageRoute(
@@ -89,20 +93,35 @@ class _HomePageState extends State<HomePage> {
                           ),
                         );
                         if (result != null) {
-                          if (result['deck'] != null) {
-                            final deckIndex = decks.indexWhere((d) => d['title'] == result['deck']);
+                          print('DEBUG result: $result');
+                          if (result['deck'] != null && (result['deck'] as String).trim().isNotEmpty) {
+                            final deckIndex = decks.indexWhere(
+                              (d) => d['title'].toString().trim() == (result['deck'] as String).trim(),
+                            );
+                            print('DEBUG deckIndex: $deckIndex');
                             if (deckIndex != -1) {
                               setState(() {
+                                // CAST FLASHCARDS LIST AGAR PASTI List<Map<String, dynamic>>
                                 (decks[deckIndex]['flashcards'] as List).add({
                                   'question': result['question'],
                                   'answer': result['answer'],
+                                  if (result['imagePath'] != null) 'imagePath': result['imagePath'],
+                                });
+                              });
+                              print('DEBUG flashcards in deck: ${decks[deckIndex]['flashcards']}');
+                            } else {
+                              print('DEBUG: Deck not found, masuk looseFlashcards');
+                              setState(() {
+                                looseFlashcards.add({
+                                  'title': (result['question'] ?? '').toString(),
+                                  'time': TimeOfDay.now().format(context),
                                 });
                               });
                             }
                           } else {
                             setState(() {
                               looseFlashcards.add({
-                                'title': result['question'],
+                                'title': (result['question'] ?? '').toString(),
                                 'time': TimeOfDay.now().format(context),
                               });
                             });
@@ -130,7 +149,6 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
-                        // CAMERA SCAN ACTION
                         final result = await Navigator.push<Map<String, dynamic>>(
                           context,
                           MaterialPageRoute(
@@ -141,20 +159,34 @@ class _HomePageState extends State<HomePage> {
                           ),
                         );
                         if (result != null) {
-                          if (result['deck'] != null) {
-                            final deckIndex = decks.indexWhere((d) => d['title'] == result['deck']);
+                          print('DEBUG result: $result');
+                          if (result['deck'] != null && (result['deck'] as String).trim().isNotEmpty) {
+                            final deckIndex = decks.indexWhere(
+                              (d) => d['title'].toString().trim() == (result['deck'] as String).trim(),
+                            );
+                            print('DEBUG deckIndex: $deckIndex');
                             if (deckIndex != -1) {
                               setState(() {
                                 (decks[deckIndex]['flashcards'] as List).add({
                                   'question': result['question'],
                                   'answer': result['answer'],
+                                  if (result['imagePath'] != null) 'imagePath': result['imagePath'],
+                                });
+                              });
+                              print('DEBUG flashcards in deck: ${decks[deckIndex]['flashcards']}');
+                            } else {
+                              print('DEBUG: Deck not found, masuk looseFlashcards');
+                              setState(() {
+                                looseFlashcards.add({
+                                  'title': (result['question'] ?? '').toString(),
+                                  'time': TimeOfDay.now().format(context),
                                 });
                               });
                             }
                           } else {
                             setState(() {
                               looseFlashcards.add({
-                                'title': result['question'],
+                                'title': (result['question'] ?? '').toString(),
                                 'time': TimeOfDay.now().format(context),
                               });
                             });
@@ -186,7 +218,6 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              // Decks horizontal swipe
               SizedBox(
                 height: boxHeight,
                 child: ListView.builder(
@@ -202,7 +233,7 @@ class _HomePageState extends State<HomePage> {
                               builder: (context) => ReviewPage(
                                 title: decks[idx]['title'],
                                 flashcards: decks[idx]['flashcards'],
-                                duration: 1, // atau sesuai kebutuhan
+                                duration: 1,
                               ),
                             ),
                           );
@@ -223,19 +254,18 @@ class _HomePageState extends State<HomePage> {
                         ),
                       );
                     } else {
-                      // Add Group button
                       return GestureDetector(
                         onTap: () async {
-                          // Navigasi ke NewDeckPage dan tunggu hasilnya
                           final newDeck = await Navigator.push<Map<String, dynamic>>(
                             context,
                             MaterialPageRoute(builder: (context) => const NewDeckPage()),
                           );
                           if (newDeck != null && newDeck['title'] != null && newDeck['flashcards'] != null) {
                             setState(() {
+                              // CAST FLASHCARDS AGAR PASTI List<Map<String, dynamic>>
                               decks.add({
                                 'title': newDeck['title'],
-                                'flashcards': newDeck['flashcards'],
+                                'flashcards': (newDeck['flashcards'] as List).cast<Map<String, dynamic>>(),
                               });
                             });
                           }
@@ -265,7 +295,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Loose flashcards list
               Expanded(
                 child: ListView.separated(
                   itemCount: looseFlashcards.length,
@@ -274,8 +303,8 @@ class _HomePageState extends State<HomePage> {
                     final card = looseFlashcards[idx];
                     return ListTile(
                       leading: const Icon(Icons.note, color: Colors.blue),
-                      title: Text(card['title']!),
-                      trailing: Text(card['time']!),
+                      title: Text(card['title']?.toString() ?? ''),
+                      trailing: Text(card['time']?.toString() ?? ''),
                       onTap: () {
                         // TODO: Open flashcard
                       },

@@ -24,6 +24,7 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
   late String flashcardTitle;
   String question = '';
   String answer = '';
+  String? selectedDeck;
   File? image;
   final picker = ImagePicker();
 
@@ -190,6 +191,23 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
                   setState(() {});
                 },
               ),
+              const SizedBox(height: 16),
+              if (!widget.fromNewDeck)
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Pilih Deck (opsional)'),
+                  value: selectedDeck,
+                  items: widget.availableDecks
+                      .map((deck) => DropdownMenuItem(
+                            value: deck,
+                            child: Text(deck),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      selectedDeck = val;
+                    });
+                  },
+                ),
               const SizedBox(height: 24),
               Center(
                 child: ElevatedButton(
@@ -204,53 +222,17 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
                   onPressed: canDone
                       ? () async {
                           if (widget.fromNewDeck) {
-                        // Kirim question, answer, dan image path!
-                        Navigator.pop(context, {
-                          'question': question,
-                          'answer': answer,
-                          'imagePath': image?.path,
-                        });
-                      }  else {
-                            String? selectedDeck;
-                            await showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: const Text('Simpan ke deck?'),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      DropdownButtonFormField<String>(
-                                        decoration: const InputDecoration(labelText: 'Pilih Deck (opsional)'),
-                                        items: widget.availableDecks
-                                            .map((deck) => DropdownMenuItem(
-                                                  value: deck,
-                                                  child: Text(deck),
-                                                ))
-                                            .toList(),
-                                        onChanged: (val) {
-                                          selectedDeck = val;
-                                        },
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const Text('Kosongkan jika ingin simpan tanpa deck'),
-                                    ],
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('Simpan'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
+                            Navigator.pop(context, {
+                              'question': question,
+                              'answer': answer,
+                              'imagePath': image?.path,
+                            });
+                          } else {
                             Navigator.pop(context, {
                               'question': question,
                               'answer': answer,
                               'deck': selectedDeck, // null jika tidak pilih deck
+                              'imagePath': image?.path,
                             });
                           }
                         }
@@ -266,7 +248,8 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
   }
 }
 
-// DottedBorder widget (simple implementation)
+enum BorderType { RRect }
+
 class DottedBorder extends StatelessWidget {
   final Widget child;
   final BorderType borderType;
@@ -298,8 +281,6 @@ class DottedBorder extends StatelessWidget {
     );
   }
 }
-
-enum BorderType { RRect }
 
 class _DottedBorderPainter extends CustomPainter {
   final Radius radius;

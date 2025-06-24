@@ -3,8 +3,7 @@ import 'dart:io';
 
 class PlayFlashcardPage extends StatefulWidget {
   final String title;
-  final List<Map<String, String>> flashcards;
-
+  final List<Map<String, dynamic>> flashcards; 
   const PlayFlashcardPage({
     super.key,
     this.title = 'New Flashcard 1',

@@ -16,6 +16,7 @@ class _ManualInputFlashcardPageState extends State<ManualInputFlashcardPage> {
   String flashcardTitle = "New Flashcard 1";
   String question = '';
   String answer = '';
+  String? selectedDeck;
 
   void _renameTitle() async {
     final controller = TextEditingController(text: flashcardTitle);
@@ -104,6 +105,22 @@ class _ManualInputFlashcardPageState extends State<ManualInputFlashcardPage> {
                   setState(() {});
                 },
               ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Pilih Deck (opsional)'),
+                value: selectedDeck,
+                items: widget.availableDecks
+                    .map((deck) => DropdownMenuItem(
+                          value: deck,
+                          child: Text(deck),
+                        ))
+                    .toList(),
+                onChanged: (val) {
+                  setState(() {
+                    selectedDeck = val;
+                  });
+                },
+              ),
               const SizedBox(height: 24),
               Center(
                 child: ElevatedButton(
@@ -117,42 +134,6 @@ class _ManualInputFlashcardPageState extends State<ManualInputFlashcardPage> {
                   ),
                   onPressed: canDone
                       ? () async {
-                          String? selectedDeck;
-                          await showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: const Text('Simpan ke deck?'),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    DropdownButtonFormField<String>(
-                                      decoration: const InputDecoration(labelText: 'Pilih Deck (opsional)'),
-                                      items: widget.availableDecks
-                                          .map((deck) => DropdownMenuItem(
-                                                value: deck,
-                                                child: Text(deck),
-                                              ))
-                                          .toList(),
-                                      onChanged: (val) {
-                                        selectedDeck = val;
-                                      },
-                                    ),
-                                    const SizedBox(height: 8),
-                                    const Text('Kosongkan jika ingin simpan tanpa deck'),
-                                  ],
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text('Simpan'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
                           Navigator.pop(context, {
                             'question': question,
                             'answer': answer,
