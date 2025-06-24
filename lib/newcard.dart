@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ManualInputFlashcardPage extends StatefulWidget {
-  final List<String> availableDecks;
+  final List<Map<String, dynamic>> availableDecks;
 
   const ManualInputFlashcardPage({
     super.key,
@@ -16,7 +18,8 @@ class _ManualInputFlashcardPageState extends State<ManualInputFlashcardPage> {
   String flashcardTitle = "New Flashcard 1";
   String question = '';
   String answer = '';
-  String? selectedDeck;
+  int? selectedDeckId;
+  bool _isSubmitting = false; // Add this line
 
   void _renameTitle() async {
     final controller = TextEditingController(text: flashcardTitle);
@@ -45,7 +48,7 @@ class _ManualInputFlashcardPageState extends State<ManualInputFlashcardPage> {
 
   @override
   Widget build(BuildContext context) {
-    bool canDone = question.trim().isNotEmpty && answer.trim().isNotEmpty;
+    bool canDone = question.trim().isNotEmpty && answer.trim().isNotEmpty && !_isSubmitting;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -106,18 +109,18 @@ class _ManualInputFlashcardPageState extends State<ManualInputFlashcardPage> {
                 },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
+              DropdownButtonFormField<int>(
                 decoration: const InputDecoration(labelText: 'Pilih Deck (opsional)'),
-                value: selectedDeck,
+                value: selectedDeckId,
                 items: widget.availableDecks
-                    .map((deck) => DropdownMenuItem(
-                          value: deck,
-                          child: Text(deck),
+                    .map((deck) => DropdownMenuItem<int>(
+                          value: deck['deck_id'] as int,
+                          child: Text(deck['title']),
                         ))
                     .toList(),
                 onChanged: (val) {
                   setState(() {
-                    selectedDeck = val;
+                    selectedDeckId = val;
                   });
                 },
               ),
@@ -134,11 +137,24 @@ class _ManualInputFlashcardPageState extends State<ManualInputFlashcardPage> {
                   ),
                   onPressed: canDone
                       ? () async {
-                          Navigator.pop(context, {
-                            'question': question,
-                            'answer': answer,
-                            'deck': selectedDeck, // null jika tidak pilih deck
-                          });
+                          setState(() => _isSubmitting = true);
+                          final response = await http.post(
+                            Uri.parse('http://10.0.2.2:5000/api/cards'),
+                            headers: {'Content-Type': 'application/json'},
+                            body: jsonEncode({
+                              'question': question,
+                              'answer': answer,
+                              'id_deck': selectedDeckId,
+                            }),
+                          );
+                          if (response.statusCode == 200) {
+                            if (mounted) Navigator.pop(context, true);
+                          } else {
+                            setState(() => _isSubmitting = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Failed to create card')),
+                            );
+                          }
                         }
                       : null,
                   child: const Text('Done'),

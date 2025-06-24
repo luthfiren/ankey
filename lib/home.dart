@@ -3,42 +3,44 @@ import 'newdeck.dart';
 import 'review.dart';
 import 'camera.dart';
 import 'newcard.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final int userId;
+  const HomePage({super.key, required this.userId});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Map<String, dynamic>> decks = [
-    {
-      'title': 'History',
-      'flashcards': <Map<String, dynamic>>[
-        {'question': 'Kapan proklamasi?', 'answer': '1945'},
-        {'question': 'Siapa presiden pertama?', 'answer': 'Soekarno'},
-      ]
-    },
-    {
-      'title': 'Biology',
-      'flashcards': <Map<String, dynamic>>[
-        {'question': 'Sel terkecil?', 'answer': 'Prokariotik'},
-        {'question': 'Fotosintesis terjadi di?', 'answer': 'Kloroplas'},
-      ]
-    },
-  ];
+  List<Map<String, dynamic>> decks = [];
 
   List<Map<String, dynamic>> looseFlashcards = [];
 
   @override
   void initState() {
     super.initState();
+    fetchDecks();
     looseFlashcards.addAll([
       {'title': 'New Flashcard 1', 'time': '19.00'},
       {'title': 'New Flashcard 2', 'time': '18.00'},
       {'title': 'New Flashcard 3', 'time': '19.00'},
     ]);
+  }
+
+  Future<void> fetchDecks() async {
+    final userId = widget.userId;
+    final response = await http.get(Uri.parse('http://10.0.2.2:5000/api/decks?user_id=$userId'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      setState(() {
+        decks = data.cast<Map<String, dynamic>>();
+      });
+    } else {
+      print('Failed to load decks');
+    }
   }
 
   @override
@@ -84,48 +86,16 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
-                        final result = await Navigator.push<Map<String, dynamic>>(
+                        final result = await Navigator.push<bool>(
                           context,
                           MaterialPageRoute(
                             builder: (context) => ManualInputFlashcardPage(
-                              availableDecks: decks.map<String>((d) => d['title'] as String).toList(),
+                              availableDecks: decks,
                             ),
                           ),
                         );
-                        if (result != null) {
-                          print('DEBUG result: $result');
-                          if (result['deck'] != null && (result['deck'] as String).trim().isNotEmpty) {
-                            final deckIndex = decks.indexWhere(
-                              (d) => d['title'].toString().trim() == (result['deck'] as String).trim(),
-                            );
-                            print('DEBUG deckIndex: $deckIndex');
-                            if (deckIndex != -1) {
-                              setState(() {
-                                // CAST FLASHCARDS LIST AGAR PASTI List<Map<String, dynamic>>
-                                (decks[deckIndex]['flashcards'] as List).add({
-                                  'question': result['question'],
-                                  'answer': result['answer'],
-                                  if (result['imagePath'] != null) 'imagePath': result['imagePath'],
-                                });
-                              });
-                              print('DEBUG flashcards in deck: ${decks[deckIndex]['flashcards']}');
-                            } else {
-                              print('DEBUG: Deck not found, masuk looseFlashcards');
-                              setState(() {
-                                looseFlashcards.add({
-                                  'title': (result['question'] ?? '').toString(),
-                                  'time': TimeOfDay.now().format(context),
-                                });
-                              });
-                            }
-                          } else {
-                            setState(() {
-                              looseFlashcards.add({
-                                'title': (result['question'] ?? '').toString(),
-                                'time': TimeOfDay.now().format(context),
-                              });
-                            });
-                          }
+                        if (result == true) {
+                          fetchDecks();
                         }
                       },
                       child: Container(
@@ -225,14 +195,15 @@ class _HomePageState extends State<HomePage> {
                   itemCount: decks.length + 1,
                   itemBuilder: (context, idx) {
                     if (idx < decks.length) {
+                      final deck = decks[idx];
                       return GestureDetector(
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => ReviewPage(
-                                title: decks[idx]['title'],
-                                flashcards: decks[idx]['flashcards'],
+                                title: deck['title'],
+                                flashcards: (deck['flashcards'] as List).cast<Map<String, dynamic>>(),
                                 duration: 1,
                               ),
                             ),
@@ -247,13 +218,14 @@ class _HomePageState extends State<HomePage> {
                           ),
                           child: Center(
                             child: Text(
-                              decks[idx]['title'],
+                              deck['title'] ?? '',
                               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                             ),
                           ),
                         ),
                       );
                     } else {
+                      // "Add Group" button
                       return GestureDetector(
                         onTap: () async {
                           final newDeck = await Navigator.push<Map<String, dynamic>>(
@@ -262,7 +234,6 @@ class _HomePageState extends State<HomePage> {
                           );
                           if (newDeck != null && newDeck['title'] != null && newDeck['flashcards'] != null) {
                             setState(() {
-                              // CAST FLASHCARDS AGAR PASTI List<Map<String, dynamic>>
                               decks.add({
                                 'title': newDeck['title'],
                                 'flashcards': (newDeck['flashcards'] as List).cast<Map<String, dynamic>>(),

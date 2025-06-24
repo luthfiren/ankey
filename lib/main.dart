@@ -39,18 +39,18 @@ class _LoginPageState extends State<LoginPage> {
         _usernameController.text,
         _passwordController.text,
       );
-      if (result['success'] == true || result['token'] != null) {
-        // Login success, navigate to HomePage
+      if (result['token'] != null && result['userId'] != null) {
+        // Login success, navigate to HomePage and pass userId
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful!')),
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomePage()),
+          MaterialPageRoute(builder: (context) => HomePage(userId: result['userId'])),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? 'Login failed')),
+          SnackBar(content: Text(result['error'] ?? 'Login failed')),
         );
       }
     } catch (e) {
