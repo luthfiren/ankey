@@ -3,6 +3,8 @@ import 'newdeck.dart';
 import 'review.dart';
 import 'camera.dart';
 import 'newcard.dart';
+import 'playdeckless.dart';
+import 'main.dart'; 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -16,14 +18,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> decks = [];
-
   List<Map<String, dynamic>> looseFlashcards = [];
 
   @override
   void initState() {
     super.initState();
     fetchDecks();
-    fetchLooseFlashcards(); // Fetch from backend instead of hardcoding
+    fetchLooseFlashcards();
   }
 
   Future<void> fetchDecks() async {
@@ -52,249 +53,335 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Color get mainGreen => const Color(0xFF00AA13); // Tokopedia green
+  Color get softGreen => const Color(0xFFF1FFF2); // Soft (for card bg)
+
+  void _logout() {
+    // Ganti semua route ke halaman login.dart (LoginPage)
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    const double boxHeight = 100;
+    const double boxHeight = 130; // gedein box input & deck
+    const double deckWidth = 160;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              const Text(
-                'Welcome, Sobat Ankey!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const TextField(
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'search',
-                    icon: Icon(Icons.search),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Create Flashcard',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () async {
-                        final result = await Navigator.push<bool>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ManualInputFlashcardPage(
-                              availableDecks: decks,
-                              userId: widget.userId, // <-- Add this line
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        // Logo bulat Tokped/Gojek
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: mainGreen.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Center(
+                            child: Image.asset(
+                              'assets/logo.png',
+                              height: 32,
+                              width: 32,
                             ),
                           ),
-                        );
-                        if (result == true) {
-                          fetchDecks();
-                          fetchLooseFlashcards();
-                        }
-                      },
-                      child: Container(
-                        height: boxHeight,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.edit, size: 28),
-                            const SizedBox(height: 4),
-                            const Text('Manual Input', style: TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () async {
-                        final result = await Navigator.push<Map<String, dynamic>>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CameraFlashcardPage(
-                              fromNewDeck: false,
-                              availableDecks: decks,
-                              userId: widget.userId, // <-- Add this line
-                            ),
+                        const SizedBox(width: 14),
+                        const Text(
+                          'Welcome, Sobat Ankey!',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
-                        );
-                        if (result != null) {
-                          print('DEBUG result: $result');
-                          if (result['deck'] != null && (result['deck'] as String).trim().isNotEmpty) {
-                            final deckIndex = decks.indexWhere(
-                              (d) => d['title'].toString().trim() == (result['deck'] as String).trim(),
-                            );
-                            print('DEBUG deckIndex: $deckIndex');
-                            if (deckIndex != -1) {
-                              setState(() {
-                                (decks[deckIndex]['flashcards'] as List).add({
-                                  'question': result['question'],
-                                  'answer': result['answer'],
-                                  if (result['imagePath'] != null) 'imagePath': result['imagePath'],
-                                });
-                              });
-                              print('DEBUG flashcards in deck: ${decks[deckIndex]['flashcards']}');
-                            } else {
-                              print('DEBUG: Deck not found, masuk looseFlashcards');
-                              setState(() {
-                                looseFlashcards.add({
-                                  'title': (result['question'] ?? '').toString(),
-                                  'time': TimeOfDay.now().format(context),
-                                });
-                              });
-                            }
-                          } else {
-                            setState(() {
-                              looseFlashcards.add({
-                                'title': (result['question'] ?? '').toString(),
-                                'time': TimeOfDay.now().format(context),
-                              });
-                            });
-                          }
-                        }
-                      },
-                      child: Container(
-                        height: boxHeight,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.camera_alt, size: 28),
-                            const SizedBox(height: 4),
-                            const Text('Camera Scan', style: TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                      ),
+                      ],
+                    ),
+                    // Logout button
+                    IconButton(
+                      icon: const Icon(Icons.logout, color: Colors.red, size: 28),
+                      tooltip: "Logout",
+                      onPressed: _logout,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Search
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const TextField(
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Search your flashcard...',
+                      icon: Icon(Icons.search, color: Colors.green),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Recent Files',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: boxHeight,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: decks.length + 1,
-                  itemBuilder: (context, idx) {
-                    if (idx < decks.length) {
-                      final deck = decks[idx];
-                      return GestureDetector(
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ReviewPage(
-                                title: deck['title'],
-                                flashcards: (deck['flashcards'] as List).cast<Map<String, dynamic>>(),
-                                duration: 1,
+                ),
+                const SizedBox(height: 28),
+                // Create Section
+                Text(
+                  'Create Flashcard',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: mainGreen,
+                  ),
+                ),
+                const SizedBox(height: 13),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Card(
+                        elevation: 0,
+                        color: softGreen,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(22),
+                          onTap: () async {
+                            final result = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ManualInputFlashcardPage(
+                                  availableDecks: decks,
+                                  userId: widget.userId,
+                                ),
                               ),
-                            ),
-                          );
-                          // Refresh decks from backend after returning
-                          await fetchDecks();
-                        },
-                        child: Container(
-                          width: boxHeight,
-                          margin: const EdgeInsets.only(right: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Center(
-                            child: Text(
-                              deck['title'] ?? '',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                        ),
-                      );
-                    } else {
-                      // "Add Group" button
-                      return GestureDetector(
-                        onTap: () async {
-                          final result = await Navigator.push<Map<String, dynamic>>(
-                            context,
-                            MaterialPageRoute(builder: (context) => NewDeckPage(userId: widget.userId)),
-                          );
-                          if (result != null && result['created'] == true) {
-                            await fetchDecks();
-                            await fetchLooseFlashcards();
-                          }
-                        },
-                        child: Container(
-                          width: boxHeight,
-                          margin: const EdgeInsets.only(right: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border.all(color: Colors.grey[400]!),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Center(
+                            );
+                            if (result == true) {
+                              fetchDecks();
+                              fetchLooseFlashcards();
+                            }
+                          },
+                          child: SizedBox(
+                            height: boxHeight,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(Icons.add, size: 28, color: Colors.grey),
-                                SizedBox(height: 4),
-                                Text('Add Group', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                              children: [
+                                Icon(Icons.edit_rounded, size: 38, color: mainGreen),
+                                const SizedBox(height: 10),
+                                const Text('Manual Input', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
                               ],
                             ),
                           ),
                         ),
-                      );
-                    }
-                  },
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Card(
+                        elevation: 0,
+                        color: softGreen,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(22),
+                          onTap: () async {
+                            final result = await Navigator.push<Map<String, dynamic>>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CameraFlashcardPage(
+                                  fromNewDeck: false,
+                                  availableDecks: decks,
+                                  userId: widget.userId,
+                                ),
+                              ),
+                            );
+                            if (result != null) {
+                              await fetchLooseFlashcards();
+                              await fetchDecks();
+                            }
+                          },
+                          child: SizedBox(
+                            height: boxHeight,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.camera_alt_rounded, size: 38, color: mainGreen),
+                                const SizedBox(height: 10),
+                                const Text('Camera Scan', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: looseFlashcards.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, idx) {
-                    final card = looseFlashcards[idx];
-                    return ListTile(
-                      leading: const Icon(Icons.note, color: Colors.blue),
-                      title: Text(card['name']?.toString() ?? card['question']?.toString() ?? ''),
-                      subtitle: Text(card['answer']?.toString() ?? ''),
-                      // Optionally show time or other info if available
-                      onTap: () {
-                        // TODO: Open flashcard
+                const SizedBox(height: 30),
+                // Recent Decks Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Recent Files',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: mainGreen),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add_circle_outline_rounded, color: mainGreen, size: 28),
+                      tooltip: "Add Deck",
+                      onPressed: () async {
+                        final result = await Navigator.push<Map<String, dynamic>>(
+                          context,
+                          MaterialPageRoute(builder: (context) => NewDeckPage(userId: widget.userId)),
+                        );
+                        if (result != null && result['created'] == true) {
+                          await fetchDecks();
+                          await fetchLooseFlashcards();
+                        }
                       },
-                    );
-                  },
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                SizedBox(
+                  height: boxHeight + 30,
+                  child: decks.isEmpty
+                      ? Center(
+                          child: Text(
+                            "No decks yet.",
+                            style: TextStyle(color: Colors.grey[500]),
+                          ),
+                        )
+                      : ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: decks.length,
+                          itemBuilder: (context, idx) {
+                            final deck = decks[idx];
+                            return GestureDetector(
+                              onTap: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ReviewPage(
+                                      title: deck['title'],
+                                      flashcards: (deck['flashcards'] as List).cast<Map<String, dynamic>>(),
+                                      duration: 1,
+                                    ),
+                                  ),
+                                );
+                                await fetchDecks();
+                              },
+                              child: Container(
+                                width: deckWidth,
+                                margin: const EdgeInsets.only(right: 18),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(color: mainGreen.withOpacity(0.12)),
+                                  borderRadius: BorderRadius.circular(22),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: mainGreen.withOpacity(0.08),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text(
+                                      deck['title'] ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                const SizedBox(height: 24),
+                // Loose Flashcards Section
+                Text(
+                  'Loose Flashcards',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: mainGreen),
+                ),
+                const SizedBox(height: 8),
+                looseFlashcards.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Center(
+                          child: Text(
+                            "No loose flashcards.",
+                            style: TextStyle(color: Colors.grey[500]),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: looseFlashcards.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, idx) {
+                          final card = looseFlashcards[idx];
+                          return Card(
+                            margin: EdgeInsets.zero,
+                            elevation: 0,
+                            color: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: mainGreen.withOpacity(0.13)),
+                            ),
+                            child: ListTile(
+                              leading: Container(
+                                decoration: BoxDecoration(
+                                  color: mainGreen.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.all(7),
+                                child: const Icon(Icons.note, color: Colors.green, size: 22),
+                              ),
+                              title: Text(
+                                card['question']?.toString() ?? card['name']?.toString() ?? '',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Text(
+                                card['answer']?.toString() ?? '',
+                                style: const TextStyle(fontSize: 15, color: Colors.black54),
+                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => LooseFlashcardPlayPage(
+                                      flashcards: [card],
+                                      title: "Loose Flashcard",
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),

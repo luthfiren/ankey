@@ -6,16 +6,16 @@ import 'package:http/http.dart' as http;
 
 class CameraFlashcardPage extends StatefulWidget {
   final bool fromNewDeck;
-  final int? userId; // <-- Add this line
+  final int? userId;
   final int flashcardNumber;
   final String? flashcardTitle;
-  final List<Map<String, dynamic>> availableDecks; // Change type
+  final List<Map<String, dynamic>> availableDecks;
 
   const CameraFlashcardPage({
     super.key,
     required this.availableDecks,
     this.fromNewDeck = false,
-    this.userId, // <-- Add this line
+    this.userId,
     this.flashcardNumber = 1,
     this.flashcardTitle,
   });
@@ -28,9 +28,13 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
   late String flashcardTitle;
   String question = '';
   String answer = '';
-  int? selectedDeckId; // Use deck_id
+  int? selectedDeckId;
   File? image;
   final picker = ImagePicker();
+  bool _isSubmitting = false;
+
+  Color get mainGreen => const Color(0xFF00AA13);
+  Color get softGreen => const Color(0xFFF1FFF2);
 
   @override
   void initState() {
@@ -80,6 +84,10 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
         content: TextField(
           controller: controller,
           autofocus: true,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: "Enter new title",
+          ),
         ),
         actions: [
           TextButton(
@@ -98,254 +106,255 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
 
   @override
   Widget build(BuildContext context) {
-    bool canDone = question.trim().isNotEmpty && answer.trim().isNotEmpty && image != null;
+    bool canDone = question.trim().isNotEmpty && answer.trim().isNotEmpty && image != null && !_isSubmitting;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         leading: const BackButton(),
-        title: Text(flashcardTitle, style: const TextStyle(fontWeight: FontWeight.w400)),
-        centerTitle: false,
+        title: Text(
+          flashcardTitle,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            color: Colors.black,
+          ),
+        ),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        actions: [
+          TextButton(
+            onPressed: _renameTitle,
+            child: Text('Rename', style: TextStyle(color: mainGreen, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: ListView(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      flashcardTitle,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Preview Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
+                  decoration: BoxDecoration(
+                    color: softGreen,
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: mainGreen.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: mainGreen.withOpacity(0.14),
+                      width: 1.5,
                     ),
                   ),
-                  TextButton(
-                    onPressed: _renameTitle,
-                    child: const Text('Rename'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text('Question', style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _pickImage,
-                child: DottedBorder(
-                  borderType: BorderType.RRect,
-                  radius: const Radius.circular(16),
-                  dashPattern: const [8, 6],
-                  color: Colors.green,
-                  child: Container(
-                    width: double.infinity,
-                    height: 240,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: image == null
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.camera_alt, size: 48, color: Colors.green),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Take Photos/From Gallery',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ],
-                          )
-                        : ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
-                            child: Image.file(image!, fit: BoxFit.cover, width: double.infinity, height: 240),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: mainGreen.withOpacity(0.17)),
                           ),
+                          child: image == null
+                              ? Icon(Icons.camera_alt, color: mainGreen, size: 32)
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(image!, fit: BoxFit.cover, width: 70, height: 70),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              flashcardTitle,
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: mainGreen,
+                              ),
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              question.isNotEmpty ? question : 'Question preview...',
+                              style: const TextStyle(fontSize: 15, color: Colors.black),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Question',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                const SizedBox(height: 24),
+                const Text(
+                  'Question',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
                 ),
-                onChanged: (val) {
-                  question = val;
-                  setState(() {});
-                },
-              ),
-              const SizedBox(height: 16),
-              Text('Answer', style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 8),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'Answer',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 8),
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Type your question here...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: const BorderSide(color: Color.fromARGB(255, 209, 209, 209)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(color: mainGreen, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.transparent,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                onChanged: (val) {
-                  answer = val;
-                  setState(() {});
-                },
-              ),
-              const SizedBox(height: 16),
-              if (!widget.fromNewDeck)
-                DropdownButtonFormField<int>(
-                  decoration: const InputDecoration(labelText: 'Pilih Deck (opsional)'),
-                  value: selectedDeckId,
-                  items: widget.availableDecks
-                      .map((deck) => DropdownMenuItem<int>(
-                            value: deck['deck_id'] as int,
-                            child: Text(deck['title']),
-                          ))
-                      .toList(),
                   onChanged: (val) {
-                    setState(() {
-                      selectedDeckId = val;
-                    });
+                    question = val;
+                    setState(() {});
                   },
+                  style: const TextStyle(fontSize: 16),
                 ),
-              const SizedBox(height: 24),
-              Center(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: canDone
-                        ? Colors.green
-                        : Colors.green.withOpacity(0.4),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    minimumSize: const Size(100, 40),
+                const SizedBox(height: 22),
+                const Text(
+                  'Answer',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Type your answer here...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: const BorderSide(color: Color.fromARGB(255, 209, 209, 209)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(color: mainGreen, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.transparent,
                   ),
-                  onPressed: canDone
-                      ? () async {
-                          String? base64Image;
-                          if (image != null) {
-                            final bytes = await image!.readAsBytes();
-                            base64Image = base64Encode(bytes);
-                          }
-                          final response = await http.post(
-                            Uri.parse('http://10.0.2.2:5000/api/cards'),
-                            headers: {'Content-Type': 'application/json'},
-                            body: jsonEncode({
-                              'question': question,
-                              'answer': answer,
-                              'id_deck': selectedDeckId, // <-- This will be null if no deck is selected
-                              'name': flashcardTitle,
-                              'image': base64Image,
-                              'id_user': widget.userId,
-                            }),
-                          );
-                          if (response.statusCode == 200) {
-                            if (mounted) {
-                              Navigator.pop(context, {
+                  onChanged: (val) {
+                    answer = val;
+                    setState(() {});
+                  },
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 22),
+                if (!widget.fromNewDeck)
+                  DropdownButtonFormField<int>(
+                    decoration: InputDecoration(
+                      labelText: 'Pilih Deck (opsional)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    value: selectedDeckId,
+                    items: widget.availableDecks
+                        .map((deck) => DropdownMenuItem<int>(
+                              value: deck['deck_id'] as int,
+                              child: Text(deck['title']),
+                            ))
+                        .toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        selectedDeckId = val;
+                      });
+                    },
+                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: canDone ? mainGreen : mainGreen.withOpacity(0.4),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    ),
+                    onPressed: canDone
+                        ? () async {
+                            setState(() => _isSubmitting = true);
+                            String? base64Image;
+                            if (image != null) {
+                              final bytes = await image!.readAsBytes();
+                              base64Image = base64Encode(bytes);
+                            }
+                            final response = await http.post(
+                              Uri.parse('http://10.0.2.2:5000/api/cards'),
+                              headers: {'Content-Type': 'application/json'},
+                              body: jsonEncode({
                                 'question': question,
                                 'answer': answer,
-                                'imagePath': image?.path,
-                                'flashcardTitle': flashcardTitle,
-                                'deck': selectedDeckId != null
-                                    ? (widget.availableDecks.firstWhere(
-                                        (deck) => deck['deck_id'] == selectedDeckId,
-                                        orElse: () => {},
-                                      )['title'] ?? '')
-                                    : null,
-                              });
-                            }
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Failed to create card')),
+                                'id_deck': selectedDeckId,
+                                'name': flashcardTitle,
+                                'image': base64Image,
+                                'id_user': widget.userId,
+                              }),
                             );
+                            if (response.statusCode == 200) {
+                              if (mounted) {
+                                Navigator.pop(context, {
+                                  'question': question,
+                                  'answer': answer,
+                                  'imagePath': image?.path,
+                                  'flashcardTitle': flashcardTitle,
+                                  'deck': selectedDeckId != null
+                                      ? (widget.availableDecks.firstWhere(
+                                          (deck) => deck['deck_id'] == selectedDeckId,
+                                          orElse: () => {},
+                                        )['title'] ?? '')
+                                      : null,
+                                });
+                              }
+                            } else {
+                              setState(() => _isSubmitting = false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Failed to create card')),
+                              );
+                            }
                           }
-                        }
-                      : null,
-                  child: const Text('Done'),
+                        : null,
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
+                          )
+                        : const Text('Done'),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-}
-
-enum BorderType { RRect }
-
-class DottedBorder extends StatelessWidget {
-  final Widget child;
-  final BorderType borderType;
-  final Radius radius;
-  final List<double> dashPattern;
-  final Color color;
-
-  const DottedBorder({
-    super.key,
-    required this.child,
-    this.borderType = BorderType.RRect,
-    this.radius = const Radius.circular(8),
-    this.dashPattern = const [4, 4],
-    this.color = Colors.grey,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _DottedBorderPainter(
-        radius: radius,
-        dashPattern: dashPattern,
-        color: color,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.all(radius),
-        child: child,
-      ),
-    );
-  }
-}
-
-class _DottedBorderPainter extends CustomPainter {
-  final Radius radius;
-  final List<double> dashPattern;
-  final Color color;
-
-  _DottedBorderPainter({
-    required this.radius,
-    required this.dashPattern,
-    required this.color,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    final rrect = RRect.fromRectAndRadius(Offset.zero & size, radius);
-    final path = Path()..addRRect(rrect);
-
-    double dashOn = dashPattern[0];
-    double dashOff = dashPattern[1];
-    double distance = 0.0;
-    for (final metric in path.computeMetrics()) {
-      while (distance < metric.length) {
-        final next = distance + dashOn;
-        canvas.drawPath(
-          metric.extractPath(distance, next.clamp(0, metric.length)),
-          paint,
-        );
-        distance = next + dashOff;
-      }
-      distance = 0.0;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

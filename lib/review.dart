@@ -114,8 +114,46 @@ class _ReviewPageState extends State<ReviewPage> {
     pendingEdits.clear();
   }
 
+  Future<void> _deleteDeck() async {
+    bool confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Deck"),
+        content: const Text("Are you sure you want to delete this deck and all its flashcards?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      // Assuming API endpoint for deck deletion
+      final res = await http.delete(
+        Uri.parse('http://10.0.2.2:5000/api/decks?title=${Uri.encodeComponent(widget.title)}'),
+      );
+      if (res.statusCode == 200) {
+        // GO BACK TO HOMEPAGE
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete deck!')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    Color mainGreen = const Color(0xFF00AA13);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -142,7 +180,7 @@ class _ReviewPageState extends State<ReviewPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  _buildHeaderBox(flashcards.length, widget.duration),
+                  _buildHeaderBox(flashcards.length, widget.duration, mainGreen),
                   const SizedBox(height: 32),
                   ...List.generate(flashcards.length, (index) {
                     final card = flashcards[index];
@@ -277,49 +315,71 @@ class _ReviewPageState extends State<ReviewPage> {
             ),
           ),
 
-          // Play/Done button fixed at bottom
+          // Play/Done/Edit/Delete button fixed at bottom
           Positioned(
             bottom: 20,
             left: 0,
             right: 0,
-            child: Center(
-              child: SizedBox(
-                width: 150,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: flashcards.isEmpty
-                      ? null
-                      : () async {
-                          if (isEditMode) {
-                            await _commitChanges();
-                            setState(() {
-                              isEditMode = false;
-                            });
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PlayFlashcardPage(
-                                  title: widget.title,
-                                  flashcards: flashcards,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Edit/Play/Done
+                SizedBox(
+                  width: 150,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: flashcards.isEmpty
+                        ? null
+                        : () async {
+                            if (isEditMode) {
+                              await _commitChanges();
+                              setState(() {
+                                isEditMode = false;
+                              });
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PlayFlashcardPage(
+                                    title: widget.title,
+                                    flashcards: flashcards,
+                                  ),
                                 ),
-                              ),
-                            );
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                              );
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4CAF50),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      isEditMode ? "Done" : "Play!",
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  child: Text(
-                    isEditMode ? "Done" : "Play!",
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 14),
+                // Delete (always visible, but with confirm dialog)
+                SizedBox(
+                  width: 150,
+                  height: 42,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    label: const Text(
+                      "Delete Deck",
+                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: _deleteDeck,
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -327,10 +387,10 @@ class _ReviewPageState extends State<ReviewPage> {
     );
   }
 
-  Widget _buildHeaderBox(int flashcardCount, int duration) {
+  Widget _buildHeaderBox(int flashcardCount, int duration, Color mainGreen) {
     return CustomPaint(
       painter: DashRectPainter(
-        color: Colors.green,
+        color: mainGreen,
         strokeWidth: 2,
         radius: 24,
         gap: 8,
@@ -365,7 +425,7 @@ class _ReviewPageState extends State<ReviewPage> {
                 icon: Icon(isEditMode ? Icons.close : Icons.edit, color: Colors.white),
                 label: Text(isEditMode ? "Cancel" : "Edit", style: const TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: mainGreen,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
@@ -411,7 +471,7 @@ class _InfoCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.green, width: 1.5),
+          border: Border.all(color: const Color(0xFF00AA13), width: 1.5),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -438,7 +498,7 @@ class _WhiteBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green, width: 1.5),
+        border: Border.all(color: const Color(0xFF00AA13), width: 1.5),
       ),
       child: child,
     );
