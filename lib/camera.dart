@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class CameraFlashcardPage extends StatefulWidget {
   final bool fromNewDeck;
   final int flashcardNumber;
   final String? flashcardTitle;
-  final List<String> availableDecks;
+  final List<Map<String, dynamic>> availableDecks; // Change type
 
   const CameraFlashcardPage({
     super.key,
     this.fromNewDeck = false,
     this.flashcardNumber = 1,
     this.flashcardTitle,
-    this.availableDecks = const ['History', 'Biology'],
+    required this.availableDecks, // Make required
   });
 
   @override
@@ -24,7 +26,7 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
   late String flashcardTitle;
   String question = '';
   String answer = '';
-  String? selectedDeck;
+  int? selectedDeckId; // Use deck_id
   File? image;
   final picker = ImagePicker();
 
@@ -193,18 +195,18 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
               ),
               const SizedBox(height: 16),
               if (!widget.fromNewDeck)
-                DropdownButtonFormField<String>(
+                DropdownButtonFormField<int>(
                   decoration: const InputDecoration(labelText: 'Pilih Deck (opsional)'),
-                  value: selectedDeck,
+                  value: selectedDeckId,
                   items: widget.availableDecks
-                      .map((deck) => DropdownMenuItem(
-                            value: deck,
-                            child: Text(deck),
+                      .map((deck) => DropdownMenuItem<int>(
+                            value: deck['deck_id'] as int,
+                            child: Text(deck['title']),
                           ))
                       .toList(),
                   onChanged: (val) {
                     setState(() {
-                      selectedDeck = val;
+                      selectedDeckId = val;
                     });
                   },
                 ),
@@ -221,19 +223,41 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
                   ),
                   onPressed: canDone
                       ? () async {
-                          if (widget.fromNewDeck) {
-                            Navigator.pop(context, {
+                          String? base64Image;
+                          if (image != null) {
+                            final bytes = await image!.readAsBytes();
+                            base64Image = base64Encode(bytes);
+                          }
+                          final response = await http.post(
+                            Uri.parse('http://10.0.2.2:5000/api/cards'),
+                            headers: {'Content-Type': 'application/json'},
+                            body: jsonEncode({
                               'question': question,
                               'answer': answer,
-                              'imagePath': image?.path,
-                            });
+                              'id_deck': selectedDeckId,
+                              'name': flashcardTitle,
+                              'image': base64Image,
+                            }),
+                          );
+                          if (response.statusCode == 200) {
+                            if (mounted) {
+                              Navigator.pop(context, {
+                                'question': question,
+                                'answer': answer,
+                                'imagePath': image?.path,
+                                'flashcardTitle': flashcardTitle,
+                                'deck': selectedDeckId != null
+                                    ? (widget.availableDecks.firstWhere(
+                                        (deck) => deck['deck_id'] == selectedDeckId,
+                                        orElse: () => {},
+                                      )['title'] ?? '')
+                                    : null,
+                              });
+                            }
                           } else {
-                            Navigator.pop(context, {
-                              'question': question,
-                              'answer': answer,
-                              'deck': selectedDeck, // null jika tidak pilih deck
-                              'imagePath': image?.path,
-                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Failed to create card')),
+                            );
                           }
                         }
                       : null,

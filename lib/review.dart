@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 
@@ -67,15 +68,10 @@ class ReviewPage extends StatelessWidget {
     alignment: Alignment.centerLeft,
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: card['imagePath'] != null && card['imagePath']!.isNotEmpty
+      child: card['imageBase64'] != null && card['imageBase64'].isNotEmpty
           ? Row(
               children: [
-                Image.file(
-                  File(card['imagePath']!),
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                ),
+                Image.memory(base64Decode(card['imageBase64'])),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -85,10 +81,28 @@ class ReviewPage extends StatelessWidget {
                 ),
               ],
             )
-          : Text(
-              card['question'] ?? '',
-              style: const TextStyle(fontSize: 16, color: Colors.black),
-            ),
+          : card['imagePath'] != null && card['imagePath']!.isNotEmpty
+              ? Row(
+                  children: [
+                    Image.file(
+                      File(card['imagePath']!),
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        card['question'] ?? '',
+                        style: const TextStyle(fontSize: 16, color: Colors.black),
+                      ),
+                    ),
+                  ],
+                )
+              : Text(
+                  card['question'] ?? '',
+                  style: const TextStyle(fontSize: 16, color: Colors.black),
+                ),
     ),
   ),
 ),

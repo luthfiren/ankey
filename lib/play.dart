@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:convert';
 
 class PlayFlashcardPage extends StatefulWidget {
   final String title;
@@ -231,10 +232,18 @@ class _PlayFlashcardPageState extends State<PlayFlashcardPage> {
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
-                                    if (card['imagePath'] != null && card['imagePath']!.isNotEmpty)
+                                    if (card['imageBase64'] != null && card['imageBase64'].isNotEmpty)
+                                      Image.memory(
+                                        base64Decode(card['imageBase64']),
+                                        fit: BoxFit.cover,
+                                        key: ValueKey(card['id']), // Use unique card id as key
+                                      ),
+                                    if ((card['imageBase64'] == null || card['imageBase64'].isEmpty) &&
+                                        card['imagePath'] != null && card['imagePath'].isNotEmpty)
                                       Image.file(
                                         File(card['imagePath']!),
                                         fit: BoxFit.cover,
+                                        key: ValueKey(card['id']), // Use unique card id as key
                                       ),
                                     if (card['question'] != null && card['question']!.isNotEmpty)
                                       Container(

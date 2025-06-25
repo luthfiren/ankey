@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'camera.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
 
 class NewDeckPage extends StatefulWidget {
-  const NewDeckPage({super.key});
+  final int userId;
+  const NewDeckPage({super.key, required this.userId});
 
   @override
   State<NewDeckPage> createState() => _NewDeckPageState();
@@ -11,10 +15,11 @@ class NewDeckPage extends StatefulWidget {
 class _NewDeckPageState extends State<NewDeckPage> {
   String deckTitle = "New Deck";
   List<Map<String, dynamic>> flashcards = [
-    {'question': '', 'answer': ''}
-  ]; // <-- pastikan dynamic, bukan String
-
+    {'question': '', 'answer': '', 'flashcardTitle': '', 'imagePath': null}
+  ];
   int timerMinutes = 1;
+  bool _isSubmitting = false;
+  late TextEditingController deckTitleController;
 
   void _addFlashcard() {
     setState(() {
@@ -30,6 +35,7 @@ class _NewDeckPageState extends State<NewDeckPage> {
           fromNewDeck: true,
           flashcardNumber: index + 1,
           flashcardTitle: "New Flashcard ${index + 1}",
+          availableDecks: const [],
         ),
       ),
     );
@@ -38,6 +44,7 @@ class _NewDeckPageState extends State<NewDeckPage> {
         flashcards[index]['question'] = result['question'] ?? '';
         flashcards[index]['answer'] = result['answer'] ?? '';
         flashcards[index]['imagePath'] = result['imagePath'] ?? '';
+        flashcards[index]['flashcardTitle'] = result['flashcardTitle'] ?? "New Flashcard ${index + 1}";
       });
     }
   }
@@ -88,13 +95,40 @@ class _NewDeckPageState extends State<NewDeckPage> {
             flashcards[index]['answer'] = val;
           },
         ),
+        const SizedBox(height: 8),
+        if (flashcards[index]['imagePath'] != null && flashcards[index]['imagePath'].toString().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(
+                File(flashcards[index]['imagePath']),
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
         const SizedBox(height: 16),
       ],
     );
   }
 
   @override
+  void initState() {
+    super.initState();
+    deckTitleController = TextEditingController(text: deckTitle);
+  }
+
+  @override
+  void dispose() {
+    deckTitleController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final userId = widget.userId;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -114,6 +148,7 @@ class _NewDeckPageState extends State<NewDeckPage> {
               ),
               const SizedBox(height: 8),
               TextField(
+                controller: deckTitleController,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -124,7 +159,6 @@ class _NewDeckPageState extends State<NewDeckPage> {
                 ),
                 style: const TextStyle(color: Colors.black, fontSize: 16),
                 onChanged: (val) => deckTitle = val,
-                controller: TextEditingController(text: deckTitle),
               ),
               const SizedBox(height: 20),
               ...List.generate(flashcards.length, _buildFlashcardInput),
@@ -163,20 +197,70 @@ class _NewDeckPageState extends State<NewDeckPage> {
               const SizedBox(height: 32),
               Center(
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context, {
-                      'title': deckTitle,
-                      'flashcards': flashcards, // sudah benar, dynamic
-                      'timer': timerMinutes,
-                    });
-                  },
+                  onPressed: _isSubmitting
+                      ? null
+                      : () async {
+                          setState(() => _isSubmitting = true);
+                          try {
+                            // 1. Create the deck
+                            final deckResponse = await http.post(
+                              Uri.parse('http://10.0.2.2:5000/api/decks'),
+                              headers: {'Content-Type': 'application/json'},
+                              body: jsonEncode({
+                                'name': deckTitle,
+                                'timer': timerMinutes,
+                                'user_id': widget.userId,
+                              }),
+                            );
+                            if (deckResponse.statusCode != 200) {
+                              throw Exception('Failed to create deck');
+                            }
+                            final deckData = jsonDecode(deckResponse.body);
+                            final int deckId = deckData['deck_id'];
+
+                            // 2. Create all flashcards for this deck
+                            for (var i = 0; i < flashcards.length; i++) {
+                              final card = flashcards[i];
+                              String? base64Image;
+                              if (card['imagePath'] != null && card['imagePath'].toString().isNotEmpty) {
+                                final file = File(card['imagePath']);
+                                if (await file.exists()) {
+                                  final bytes = await file.readAsBytes();
+                                  base64Image = base64Encode(bytes);
+                                }
+                              }
+                              await http.post(
+                                Uri.parse('http://10.0.2.2:5000/api/cards'),
+                                headers: {'Content-Type': 'application/json'},
+                                body: jsonEncode({
+                                  'question': card['question'],
+                                  'answer': card['answer'],
+                                  'id_deck': deckId,
+                                  'name': card['flashcardTitle']?.isNotEmpty == true
+                                      ? card['flashcardTitle']
+                                      : 'New Flashcard ${i + 1}',
+                                  'image': base64Image,
+                                }),
+                              );
+                            }
+
+                            if (mounted) Navigator.pop(context, {'created': true});
+                          } catch (e) {
+                            setState(() => _isSubmitting = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to create deck: $e')),
+                            );
+                          }
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     minimumSize: const Size(120, 44),
                   ),
-                  child: const Text('Save Deck', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: _isSubmitting
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Save Deck', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

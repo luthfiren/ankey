@@ -145,6 +145,7 @@ class _ManualInputFlashcardPageState extends State<ManualInputFlashcardPage> {
                               'question': question,
                               'answer': answer,
                               'id_deck': selectedDeckId,
+                              'name': flashcardTitle, // Add this line
                             }),
                           );
                           if (response.statusCode == 200) {

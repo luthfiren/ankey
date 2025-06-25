@@ -124,7 +124,7 @@ class _HomePageState extends State<HomePage> {
                           MaterialPageRoute(
                             builder: (context) => CameraFlashcardPage(
                               fromNewDeck: false,
-                              availableDecks: decks.map<String>((d) => d['title'] as String).toList(),
+                              availableDecks: decks, // Pass as List<Map<String, dynamic>>
                             ),
                           ),
                         );
@@ -228,17 +228,12 @@ class _HomePageState extends State<HomePage> {
                       // "Add Group" button
                       return GestureDetector(
                         onTap: () async {
-                          final newDeck = await Navigator.push<Map<String, dynamic>>(
+                          final result = await Navigator.push<Map<String, dynamic>>(
                             context,
-                            MaterialPageRoute(builder: (context) => const NewDeckPage()),
+                            MaterialPageRoute(builder: (context) => NewDeckPage(userId: widget.userId)),
                           );
-                          if (newDeck != null && newDeck['title'] != null && newDeck['flashcards'] != null) {
-                            setState(() {
-                              decks.add({
-                                'title': newDeck['title'],
-                                'flashcards': (newDeck['flashcards'] as List).cast<Map<String, dynamic>>(),
-                              });
-                            });
+                          if (result != null && result['created'] == true) {
+                            await fetchDecks();
                           }
                         },
                         child: Container(
