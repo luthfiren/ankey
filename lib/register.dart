@@ -16,6 +16,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  int? registeredUserId;
 
   void _register() async {
     setState(() => _isLoading = true);
@@ -26,10 +27,11 @@ class _RegisterPageState extends State<RegisterPage> {
         _passwordController.text,
       );
       if (result['success'] == true || result['token'] != null) {
-        // Registration success, go to NamePage
+        // Ambil userId jika backend return
+        registeredUserId = result['userId'];
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const NamePage()),
+          MaterialPageRoute(builder: (context) => NamePage(userId: registeredUserId)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -53,14 +55,14 @@ class _RegisterPageState extends State<RegisterPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Image placeholder at the top
               SizedBox(
                 height: screenHeight / 3,
                 width: double.infinity,
-                child: Container(
-                  color: Colors.grey[300],
-                  child: const Center(
-                    child: Icon(Icons.image, size: 80, color: Colors.grey),
+                child: Center(
+                  child: Image.asset(
+                    'assets/logo.png',
+                    height: screenHeight / 4,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -87,7 +89,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
-                    // Email TextField
                     TextField(
                       controller: _emailController,
                       decoration: const InputDecoration(
@@ -108,7 +109,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Username TextField
                     TextField(
                       controller: _usernameController,
                       decoration: const InputDecoration(
@@ -129,7 +129,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Password TextField
                     TextField(
                       controller: _passwordController,
                       obscureText: true,
@@ -167,61 +166,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // Divider with "Or" in the middle
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Divider(
-                            thickness: 1,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                          child: Text(
-                            'Or',
-                            style: TextStyle(
-                              color: Colors.black54,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const Expanded(
-                          child: Divider(
-                            thickness: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Google register button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          foregroundColor: Colors.black,
-                        ),
-                        onPressed: () {
-                          // Handle Google register
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              'assets/img1.png',
-                              height: 24,
-                              width: 24,
-                            ),
-                            const SizedBox(width: 16),
-                            const Text('Login with Google'),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Login text
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

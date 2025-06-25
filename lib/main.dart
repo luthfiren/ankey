@@ -70,13 +70,15 @@ class _LoginPageState extends State<LoginPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
+              // Logo besar tanpa box abu-abu, menyatu dengan background
               SizedBox(
                 height: screenHeight / 3,
                 width: double.infinity,
-                child: Container(
-                  color: Colors.grey[300],
-                  child: const Center(
-                    child: Icon(Icons.image, size: 80, color: Colors.grey),
+                child: Center(
+                  child: Image.asset(
+                    'assets/logo.png',
+                    height: screenHeight / 4, // Lebih besar dari sebelumnya
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -170,58 +172,6 @@ class _LoginPageState extends State<LoginPage> {
                         child: _isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text('Login'),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Divider(
-                            thickness: 1,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                          child: Text(
-                            'Or',
-                            style: TextStyle(
-                              color: Colors.black54,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const Expanded(
-                          child: Divider(
-                            thickness: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          foregroundColor: Colors.black,
-                        ),
-                        onPressed: () {
-                          // Handle Google login
-                        },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              'assets/img1.png',
-                              height: 24,
-                              width: 24,
-                            ),
-                            const SizedBox(width: 16),
-                            const Text('Login with Google'),
-                          ],
-                        ),
                       ),
                     ),
                     const SizedBox(height: 24),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'name.dart';
+import 'home.dart';
 
 class OnboardingPage extends StatefulWidget {
-  const OnboardingPage({super.key});
+  final int? userId; // Tambahkan jika ingin lempar userId dari register/name (bisa null kalau belum ada)
+  const OnboardingPage({super.key, this.userId});
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -38,10 +39,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   void _prevPageOrBack(BuildContext context) {
     if (_currentPage == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const NamePage()),
-      );
+      Navigator.pop(context);
     } else {
       _controller.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
@@ -68,6 +66,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Pastikan userId dilempar ke HomePage dari Register (atau gunakan userId dari global state/session)
     return Scaffold(
       body: SafeArea(
         child: Stack(
@@ -89,7 +88,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Spacer(),
-                          // Floating image
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -132,7 +130,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                             ),
                           ),
                           const Spacer(),
-                          // Page indicators
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(
@@ -148,7 +145,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
               ],
             ),
-            // Back icon at top left
             Positioned(
               top: 16,
               left: 16,
@@ -178,7 +174,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
               if (_currentPage < onboardingData.length - 1) {
                 _nextPage();
               } else {
-                // Handle finish/onboarding complete
+                // Langsung ke HomePage, pastikan userId dilempar dari Register/NamePage
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage(userId: widget.userId ?? 0)),
+                  (route) => false,
+                );
               }
             },
             child: Text(_currentPage < onboardingData.length - 1 ? 'Next' : 'Finish'),

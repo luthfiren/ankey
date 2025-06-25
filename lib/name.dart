@@ -3,7 +3,8 @@ import 'register.dart';
 import 'onboarding.dart';
 
 class NamePage extends StatelessWidget {
-  const NamePage({super.key});
+  final int? userId;
+  const NamePage({super.key, this.userId});
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +14,6 @@ class NamePage extends StatelessWidget {
       body: SafeArea(
         child: Stack(
           children: [
-            // Main content centered
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -87,11 +87,11 @@ class NamePage extends StatelessWidget {
               foregroundColor: Colors.black,
             ),
             onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const OnboardingPage()),
-                    );
-                  },
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => OnboardingPage(userId: userId)),
+              );
+            },
             child: const Text('Next'),
           ),
         ),
