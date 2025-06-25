@@ -24,7 +24,7 @@ git clone https://github.com/luthfiren/ankey.git
 cd ankey
 ```
 
-### 2. Clone Repositori Backend (Flask/Python)
+### 2. Clone Repositori Backend 
 
 Silakan clone juga backend Flask (BE) di:
 > [https://github.com/KevinSatrio/ankey_be](https://github.com/KevinSatrio/ankey_be)
