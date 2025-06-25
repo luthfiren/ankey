@@ -5,10 +5,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'play.dart';
 
-class ReviewPage extends StatelessWidget {
+class ReviewPage extends StatefulWidget {
   final String title;
   final int duration;
-  final List<Map<String, dynamic>> flashcards; // <--- Ubah di sini
+  final List<Map<String, dynamic>> flashcards;
 
   const ReviewPage({
     super.key,
@@ -16,6 +16,76 @@ class ReviewPage extends StatelessWidget {
     required this.flashcards,
     this.duration = 1,
   });
+
+  @override
+  State<ReviewPage> createState() => _ReviewPageState();
+}
+
+class _ReviewPageState extends State<ReviewPage> {
+  bool isEditMode = false;
+  late List<Map<String, dynamic>> flashcards;
+
+  @override
+  void initState() {
+    super.initState();
+    // Deep copy to allow editing
+    flashcards = widget.flashcards.map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
+  void _removeFlashcard(int index) {
+    setState(() {
+      flashcards.removeAt(index);
+    });
+  }
+
+  void _editFlashcard(int index) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) {
+        final questionController = TextEditingController(text: flashcards[index]['question'] ?? '');
+        final answerController = TextEditingController(text: flashcards[index]['answer'] ?? '');
+
+        return AlertDialog(
+          title: const Text('Edit Flashcard'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: questionController,
+                decoration: const InputDecoration(labelText: 'Question'),
+              ),
+              TextField(
+                controller: answerController,
+                decoration: const InputDecoration(labelText: 'Answer'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context), // Cancel
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop<Map<String, dynamic>>(context, {
+                  ...flashcards[index],
+                  'question': questionController.text,
+                  'answer': answerController.text,
+                });
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        flashcards[index] = result;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +101,7 @@ class ReviewPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          title,
+          widget.title,
           style: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
         ),
       ),
@@ -45,7 +115,7 @@ class ReviewPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  _buildHeaderBox(flashcards.length, duration),
+                  _buildHeaderBox(flashcards.length, widget.duration),
                   const SizedBox(height: 32),
                   ...List.generate(flashcards.length, (index) {
                     final card = flashcards[index];
@@ -53,67 +123,109 @@ class ReviewPage extends StatelessWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "Question $number",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              "Question $number",
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (isEditMode)
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert, size: 20, color: Colors.black54),
+                                onSelected: (value) {
+                                  if (value == 'edit') {
+                                    _editFlashcard(index);
+                                  } else if (value == 'delete') {
+                                    _removeFlashcard(index);
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit, size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Edit'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.delete, size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Delete'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         _WhiteBox(
-  height: 60,
-  child: Align(
-    alignment: Alignment.centerLeft,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: card['imageBase64'] != null && card['imageBase64'].isNotEmpty
-          ? Row(
-              children: [
-                Image.memory(base64Decode(card['imageBase64'])),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    card['question'] ?? '',
-                    style: const TextStyle(fontSize: 16, color: Colors.black),
-                  ),
-                ),
-              ],
-            )
-          : card['imagePath'] != null && card['imagePath']!.isNotEmpty
-              ? Row(
-                  children: [
-                    Image.file(
-                      File(card['imagePath']!),
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        card['question'] ?? '',
-                        style: const TextStyle(fontSize: 16, color: Colors.black),
-                      ),
-                    ),
-                  ],
-                )
-              : Text(
-                  card['question'] ?? '',
-                  style: const TextStyle(fontSize: 16, color: Colors.black),
-                ),
-    ),
-  ),
-),
-                        const SizedBox(height: 16),
-                        Text(
-                          "Answer $number",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                          height: 60,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: card['imageBase64'] != null && card['imageBase64'].isNotEmpty
+                                  ? Row(
+                                      children: [
+                                        Image.memory(base64Decode(card['imageBase64'])),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            card['question'] ?? '',
+                                            style: const TextStyle(fontSize: 16, color: Colors.black),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : card['imagePath'] != null && card['imagePath']!.isNotEmpty
+                                      ? Row(
+                                          children: [
+                                            Image.file(
+                                              File(card['imagePath']!),
+                                              width: 48,
+                                              height: 48,
+                                              fit: BoxFit.cover,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                card['question'] ?? '',
+                                                style: const TextStyle(fontSize: 16, color: Colors.black),
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Text(
+                                          card['question'] ?? '',
+                                          style: const TextStyle(fontSize: 16, color: Colors.black),
+                                        ),
+                            ),
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Text(
+                              "Answer $number",
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         _WhiteBox(
@@ -138,7 +250,7 @@ class ReviewPage extends StatelessWidget {
             ),
           ),
 
-          // Play button fixed at bottom
+          // Play/Done button fixed at bottom
           Positioned(
             bottom: 20,
             left: 0,
@@ -151,15 +263,21 @@ class ReviewPage extends StatelessWidget {
                   onPressed: flashcards.isEmpty
                       ? null
                       : () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PlayFlashcardPage(
-                                title: title,
-                                flashcards: flashcards,
+                          if (isEditMode) {
+                            setState(() {
+                              isEditMode = false;
+                            });
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PlayFlashcardPage(
+                                  title: widget.title,
+                                  flashcards: flashcards,
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          }
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4CAF50),
@@ -168,7 +286,10 @@ class ReviewPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text("Play!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    isEditMode ? "Done" : "Play!",
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
@@ -206,6 +327,30 @@ class ReviewPage extends StatelessWidget {
               child: _InfoCard(
                 label: "Minute",
                 value: duration.toString(),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Edit button
+            SizedBox(
+              height: 42,
+              child: ElevatedButton.icon(
+                icon: Icon(isEditMode ? Icons.close : Icons.edit, color: Colors.white),
+                label: Text(isEditMode ? "Cancel" : "Edit", style: const TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                  minimumSize: const Size(80, 42),
+                ),
+                onPressed: () {
+                  setState(() {
+                    isEditMode = !isEditMode;
+                  });
+                },
               ),
             ),
           ],
