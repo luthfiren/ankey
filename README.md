@@ -10,7 +10,7 @@
 - **Kelola Deck** (grup flashcard, bisa dihapus & edit)
 - **Review dan Play Mode** untuk latihan mengingat
 - **Integrasi database MySQL di backend**
-- **Tampilan modern** 
+- **Tampilan modern**
 - **Login/Register user**
 
 ---
@@ -24,16 +24,28 @@ git clone https://github.com/luthfiren/ankey.git
 cd ankey
 ```
 
-### 2. Clone Repositori Backend 
+### 2. Clone Repositori Backend
 
-Silakan clone juga backend Flask (BE) di:
+Silakan clone juga backend (Node.js/Express) di:
 > [https://github.com/KevinSatrio/ankey_be](https://github.com/KevinSatrio/ankey_be)
-
-> **Penting:** Ikuti README repo backend untuk cara menjalankan API Flask.
 
 ---
 
-### 3. Import Database MySQL
+### 3. Install Node.js & Jalankan Backend
+
+Pastikan sudah install **Node.js** (https://nodejs.org/).
+
+Lalu jalankan backend:
+```bash
+cd ankey_be
+npm install
+npm run
+```
+> **Note:** Jalankan backend **lebih dulu** sebelum menjalankan aplikasi Flutter.
+
+---
+
+### 4. Import Database MySQL
 
 1. **Install** XAMPP (atau software MySQL lain)
 2. **Start** Apache & MySQL dari XAMPP Control Panel
@@ -46,7 +58,7 @@ Pastikan struktur tabel sudah sesuai.
 
 ---
 
-### 4. Install Dependensi Flutter
+### 5. Install Dependensi Flutter
 
 ```bash
 flutter clean
@@ -55,32 +67,29 @@ flutter pub get
 
 ---
 
-### 5. Jalankan Aplikasi
+### 6. Jalankan Aplikasi
 
 - **Via Android Studio:**  
   Buka folder project → klik Run (pilih device emulator/HP Android) 
 
--**Via visual Studio:**  
-  pilih device yang dinginkan  
+- **Via Visual Studio Code:**  
+  Pilih device yang diinginkan, lalu tekan Run (F5) atau:
 
-- **Via VSCode + Extension Chrome:**  
-  Install extension [Dart & Flutter] dan [Chrome].  
-  Jalankan:
   ```bash
-  flutter run 
+  flutter run
   ```
 
 ---
 
-### 6. Pengaturan API & Koneksi
+### 7. Pengaturan API & Koneksi
 
-- Pastikan backend Flask sudah berjalan di `http://localhost:5000`
+- Pastikan backend sudah berjalan di `http://localhost:5000`
 - Pastikan konfigurasi API di project Flutter mengarah ke backend (lihat file `.dart` yang berisi url API).
 - Jalankan backend **lebih dulu** sebelum frontend.
 
 ---
 
-### 7. Catatan
+### 8. Catatan
 
 - **Jalankan backend** lebih dulu sebelum frontend (agar aplikasi bisa login/register dan akses data).
 - **Database**: Gunakan XAMPP atau MySQL server lokal lain.
