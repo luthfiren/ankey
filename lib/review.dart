@@ -10,11 +10,13 @@ class ReviewPage extends StatefulWidget {
   final String title;
   final int duration;
   final List<Map<String, dynamic>> flashcards;
+  final int deckId; // <-- Add this
 
   const ReviewPage({
     super.key,
     required this.title,
     required this.flashcards,
+    required this.deckId, // <-- Add this
     this.duration = 1,
   });
 
@@ -134,12 +136,11 @@ class _ReviewPageState extends State<ReviewPage> {
       ),
     );
     if (confirm == true) {
-      // Assuming API endpoint for deck deletion
       final res = await http.delete(
-        Uri.parse('http://10.0.2.2:5000/api/decks?title=${Uri.encodeComponent(widget.title)}'),
+        Uri.parse('http://10.0.2.2:5000/api/decks/${widget.deckId}'), // Use deckId
       );
       if (res.statusCode == 200) {
-        // GO BACK TO HOMEPAGE
+        // Go back to home and refresh
         if (mounted) {
           Navigator.of(context).popUntil((route) => route.isFirst);
         }

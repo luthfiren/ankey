@@ -234,7 +234,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Recent Files',
+                      'Deck List',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: mainGreen),
                     ),
                     IconButton(
@@ -276,6 +276,7 @@ class _HomePageState extends State<HomePage> {
                                       title: deck['title'],
                                       flashcards: (deck['flashcards'] as List).cast<Map<String, dynamic>>(),
                                       duration: 1,
+                                      deckId: deck['deck_id'], // <-- Add this
                                     ),
                                   ),
                                 );

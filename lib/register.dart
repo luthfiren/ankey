@@ -18,6 +18,13 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _isLoading = false;
   int? registeredUserId;
 
+  bool get _isFormFilled =>
+      _emailController.text.isNotEmpty &&
+      _usernameController.text.isNotEmpty &&
+      _passwordController.text.isNotEmpty;
+
+  void _onFieldChanged(String _) => setState(() {});
+
   void _register() async {
     setState(() => _isLoading = true);
     try {
@@ -91,6 +98,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 32),
                     TextField(
                       controller: _emailController,
+                      onChanged: _onFieldChanged,
                       decoration: const InputDecoration(
                         hintText: 'Email',
                         border: OutlineInputBorder(
@@ -111,6 +119,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _usernameController,
+                      onChanged: _onFieldChanged,
                       decoration: const InputDecoration(
                         hintText: 'Username',
                         border: OutlineInputBorder(
@@ -131,6 +140,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _passwordController,
+                      onChanged: _onFieldChanged,
                       obscureText: true,
                       decoration: const InputDecoration(
                         hintText: 'Password',
@@ -159,7 +169,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           foregroundColor: Colors.black,
                         ),
-                        onPressed: _isLoading ? null : _register,
+                        onPressed: (_isLoading || !_isFormFilled) ? null : _register,
                         child: _isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text('Register'),
