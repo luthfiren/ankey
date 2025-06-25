@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'play.dart';
+import 'package:http/http.dart' as http;
 
 class ReviewPage extends StatefulWidget {
   final String title;
@@ -24,6 +25,8 @@ class ReviewPage extends StatefulWidget {
 class _ReviewPageState extends State<ReviewPage> {
   bool isEditMode = false;
   late List<Map<String, dynamic>> flashcards;
+  List<int> pendingDeletes = [];
+  List<Map<String, dynamic>> pendingEdits = [];
 
   @override
   void initState() {
@@ -33,6 +36,8 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   void _removeFlashcard(int index) {
+    final cardId = flashcards[index]['id'];
+    pendingDeletes.add(cardId);
     setState(() {
       flashcards.removeAt(index);
     });
@@ -44,7 +49,6 @@ class _ReviewPageState extends State<ReviewPage> {
       builder: (context) {
         final questionController = TextEditingController(text: flashcards[index]['question'] ?? '');
         final answerController = TextEditingController(text: flashcards[index]['answer'] ?? '');
-
         return AlertDialog(
           title: const Text('Edit Flashcard'),
           content: Column(
@@ -62,7 +66,7 @@ class _ReviewPageState extends State<ReviewPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context), // Cancel
+              onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
             ElevatedButton(
@@ -83,8 +87,31 @@ class _ReviewPageState extends State<ReviewPage> {
     if (result != null) {
       setState(() {
         flashcards[index] = result;
+        // Remove any previous edit for this card
+        pendingEdits.removeWhere((e) => e['id'] == result['id']);
+        pendingEdits.add(result);
       });
     }
+  }
+
+  Future<void> _commitChanges() async {
+    // Delete cards
+    for (final id in pendingDeletes) {
+      await http.delete(Uri.parse('http://10.0.2.2:5000/api/cards/$id'));
+    }
+    // Edit cards
+    for (final card in pendingEdits) {
+      await http.put(
+        Uri.parse('http://10.0.2.2:5000/api/cards/${card['id']}'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'question': card['question'],
+          'answer': card['answer'],
+        }),
+      );
+    }
+    pendingDeletes.clear();
+    pendingEdits.clear();
   }
 
   @override
@@ -262,8 +289,9 @@ class _ReviewPageState extends State<ReviewPage> {
                 child: ElevatedButton(
                   onPressed: flashcards.isEmpty
                       ? null
-                      : () {
+                      : () async {
                           if (isEditMode) {
+                            await _commitChanges();
                             setState(() {
                               isEditMode = false;
                             });
@@ -348,7 +376,16 @@ class _ReviewPageState extends State<ReviewPage> {
                 ),
                 onPressed: () {
                   setState(() {
-                    isEditMode = !isEditMode;
+                    if (isEditMode) {
+                      // Cancel: restore original flashcards and clear pending changes
+                      flashcards = widget.flashcards.map((e) => Map<String, dynamic>.from(e)).toList();
+                      pendingDeletes.clear();
+                      pendingEdits.clear();
+                      isEditMode = false;
+                    } else {
+                      // Enter edit mode
+                      isEditMode = true;
+                    }
                   });
                 },
               ),

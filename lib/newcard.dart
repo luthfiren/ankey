@@ -4,10 +4,12 @@ import 'dart:convert';
 
 class ManualInputFlashcardPage extends StatefulWidget {
   final List<Map<String, dynamic>> availableDecks;
+  final int userId; // <-- Add this line
 
   const ManualInputFlashcardPage({
     super.key,
     required this.availableDecks,
+    required this.userId, // <-- Add this line
   });
 
   @override
@@ -145,7 +147,8 @@ class _ManualInputFlashcardPageState extends State<ManualInputFlashcardPage> {
                               'question': question,
                               'answer': answer,
                               'id_deck': selectedDeckId,
-                              'name': flashcardTitle, // Add this line
+                              'name': flashcardTitle,
+                              'id_user': widget.userId, // <-- Add this line
                             }),
                           );
                           if (response.statusCode == 200) {

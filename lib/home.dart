@@ -23,11 +23,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     fetchDecks();
-    looseFlashcards.addAll([
-      {'title': 'New Flashcard 1', 'time': '19.00'},
-      {'title': 'New Flashcard 2', 'time': '18.00'},
-      {'title': 'New Flashcard 3', 'time': '19.00'},
-    ]);
+    fetchLooseFlashcards(); // Fetch from backend instead of hardcoding
   }
 
   Future<void> fetchDecks() async {
@@ -40,6 +36,19 @@ class _HomePageState extends State<HomePage> {
       });
     } else {
       print('Failed to load decks');
+    }
+  }
+
+  Future<void> fetchLooseFlashcards() async {
+    final userId = widget.userId;
+    final response = await http.get(Uri.parse('http://10.0.2.2:5000/api/cards/loose?user_id=$userId'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      setState(() {
+        looseFlashcards = data.cast<Map<String, dynamic>>();
+      });
+    } else {
+      print('You have no Loose Flashcards');
     }
   }
 
@@ -91,11 +100,13 @@ class _HomePageState extends State<HomePage> {
                           MaterialPageRoute(
                             builder: (context) => ManualInputFlashcardPage(
                               availableDecks: decks,
+                              userId: widget.userId, // <-- Add this line
                             ),
                           ),
                         );
                         if (result == true) {
                           fetchDecks();
+                          fetchLooseFlashcards();
                         }
                       },
                       child: Container(
@@ -124,7 +135,8 @@ class _HomePageState extends State<HomePage> {
                           MaterialPageRoute(
                             builder: (context) => CameraFlashcardPage(
                               fromNewDeck: false,
-                              availableDecks: decks, // Pass as List<Map<String, dynamic>>
+                              availableDecks: decks,
+                              userId: widget.userId, // <-- Add this line
                             ),
                           ),
                         );
@@ -197,8 +209,8 @@ class _HomePageState extends State<HomePage> {
                     if (idx < decks.length) {
                       final deck = decks[idx];
                       return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
+                        onTap: () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => ReviewPage(
@@ -208,6 +220,8 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           );
+                          // Refresh decks from backend after returning
+                          await fetchDecks();
                         },
                         child: Container(
                           width: boxHeight,
@@ -234,6 +248,7 @@ class _HomePageState extends State<HomePage> {
                           );
                           if (result != null && result['created'] == true) {
                             await fetchDecks();
+                            await fetchLooseFlashcards();
                           }
                         },
                         child: Container(
@@ -269,8 +284,9 @@ class _HomePageState extends State<HomePage> {
                     final card = looseFlashcards[idx];
                     return ListTile(
                       leading: const Icon(Icons.note, color: Colors.blue),
-                      title: Text(card['title']?.toString() ?? ''),
-                      trailing: Text(card['time']?.toString() ?? ''),
+                      title: Text(card['name']?.toString() ?? card['question']?.toString() ?? ''),
+                      subtitle: Text(card['answer']?.toString() ?? ''),
+                      // Optionally show time or other info if available
                       onTap: () {
                         // TODO: Open flashcard
                       },

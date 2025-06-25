@@ -6,16 +6,18 @@ import 'package:http/http.dart' as http;
 
 class CameraFlashcardPage extends StatefulWidget {
   final bool fromNewDeck;
+  final int? userId; // <-- Add this line
   final int flashcardNumber;
   final String? flashcardTitle;
   final List<Map<String, dynamic>> availableDecks; // Change type
 
   const CameraFlashcardPage({
     super.key,
+    required this.availableDecks,
     this.fromNewDeck = false,
+    this.userId, // <-- Add this line
     this.flashcardNumber = 1,
     this.flashcardTitle,
-    required this.availableDecks, // Make required
   });
 
   @override
@@ -234,9 +236,10 @@ class _CameraFlashcardPageState extends State<CameraFlashcardPage> {
                             body: jsonEncode({
                               'question': question,
                               'answer': answer,
-                              'id_deck': selectedDeckId,
+                              'id_deck': selectedDeckId, // <-- This will be null if no deck is selected
                               'name': flashcardTitle,
                               'image': base64Image,
+                              'id_user': widget.userId,
                             }),
                           );
                           if (response.statusCode == 200) {
