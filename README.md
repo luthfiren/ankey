@@ -119,3 +119,12 @@ Silakan gunakan, modifikasi, dan kembangkan sesuai kebutuhan.
 
 > **Frontend:** [https://github.com/luthfiren/ankey](https://github.com/luthfiren/ankey)  
 > **Backend:** [https://github.com/KevinSatrio/ankey_be](https://github.com/KevinSatrio/ankey_be)
+
+---
+
+## Author
+1. Thariq Kemal Hassan			(5026221174) 
+2. Luthfi Rihadatul Fajri		(5026221077)
+3. Muhammad Kevin Checa Satrio	(5026221083)
+4. Rosdiani Adiningsih			(5026221101)
+5. Parisya Naylah Suhaymi		(5026221138)
